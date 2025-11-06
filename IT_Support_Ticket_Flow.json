@@ -1,0 +1,121 @@
+{
+  "definition": {
+    "triggers": {
+      "When_a_new_response_is_submitted": {
+        "type": "OpenApiConnectionWebhook",
+        "inputs": {
+          "parameters": {
+            "form_id": "qT0J5lxeMUiCfYEE5kVhjCPjYX5B4TdCv_NusCMd4VBUQUk1NEpTN1gzVDhORFFWVERNTjBXV1JDSy4u"
+          },
+          "host": {
+            "apiId": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
+            "connection": "shared_microsoftforms",
+            "operationId": "CreateFormWebhook"
+          }
+        },
+        "splitOn": "@triggerOutputs()?['body/value']",
+        "metadata": {
+          "operationMetadataId": "e93c2db9-0620-48b5-97f1-bc73fab4ffb3"
+        }
+      }
+    },
+    "actions": {
+      "Get_response_details": {
+        "type": "OpenApiConnection",
+        "inputs": {
+          "parameters": {
+            "form_id": "qT0J5lxeMUiCfYEE5kVhjCPjYX5B4TdCv_NusCMd4VBUQUk1NEpTN1gzVDhORFFWVERNTjBXV1JDSy4u",
+            "response_id": "@triggerOutputs()?['body/resourceData/responseId']"
+          },
+          "host": {
+            "apiId": "/providers/Microsoft.PowerApps/apis/shared_microsoftforms",
+            "connection": "shared_microsoftforms-1",
+            "operationId": "GetFormResponseById"
+          }
+        },
+        "metadata": {
+          "operationMetadataId": "f4d05627-7fb4-4eb9-ab06-7c25637f23eb"
+        }
+      },
+      "Generate_Ticket_ID": {
+        "type": "Compose",
+        "inputs": "@concat('#IT-', rand(1,9999))",
+        "runAfter": {
+          "Get_response_details": [
+            "Succeeded"
+          ]
+        },
+        "metadata": {
+          "operationMetadataId": "60221dfa-554e-459d-a201-a8df58f27152"
+        }
+      },
+      "Check_Urgency": {
+        "type": "If",
+        "expression": {
+          "and": [
+            {
+              "equals": [
+                "@outputs('Get_response_details')?['body/rc5f3de69217748198d0118825bc098d4']",
+                "Urgent"
+              ]
+            }
+          ]
+        },
+        "runAfter": {
+          "Generate_Ticket_ID": [
+            "Succeeded"
+          ]
+        },
+        "actions": {
+          "Post_message_in_a_chat_or_channel_1": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "parameters": {
+                "poster": "Flow bot",
+                "location": "Channel",
+                "body/recipient/groupId": "5d2de009-a963-4475-a7dc-50d9057f22c2",
+                "body/recipient/channelId": "19:75017f1c070c43aa8ea743f9fa9ac403@thread.tacv2",
+                "body/messageBody": "<p>\ud83d\udea8 <b>**URGENT IT TICKET RECEIVED**</b> \ud83d\udea8<br><br>\ud83d\udd16 <b>Ticket ID:</b> @{triggerOutputs()?['body/resourceData/responseId']}<br>\ud83d\udc64 <b>Name:</b> @{outputs('Get_response_details')?['body/r9e4f7f04de39443ca05a0fd2f7acef89']}<br>\ud83c\udfe2 <b>Department & Designation:</b> @{outputs('Get_response_details')?['body/r267f9f6d0b9d471d9d0ae78034285092']}<br>\ud83d\udd22 <b>Row #:</b> @{outputs('Get_response_details')?['body/rccb1a09c8d484110a578f62703b116d1']}<br>\ud83d\udcba <b>Seat #:</b> @{outputs('Get_response_details')?['body/r7420a9807c444d39a67156a6a7bd946e']}<br>\ud83e\udde9 <b>Issue Type:</b> @{outputs('Get_response_details')?['body/r992204c6b4b94b469ad57ac2943cd71c']}<br><br>\ud83d\udcc5 <b>Submission Date & Time:</b> @{convertTimeZone(utcNow(),'UTC','Pakistan Standard Time','dd-MMM-yyyy hh:mm tt')}<br><br>\u26a0\ufe0f Please address this ticket <b>immediately</b>.</p>"
+              },
+              "host": {
+                "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams",
+                "connection": "shared_teams-1",
+                "operationId": "PostMessageToConversation"
+              }
+            },
+            "metadata": {
+              "operationMetadataId": "c18680e8-40cf-4a27-a564-4aaa172fc4fb"
+            }
+          }
+        },
+        "else": {
+          "actions": {
+            "Post_message_in_a_chat_or_channel_2": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "poster": "Flow bot",
+                  "location": "Channel",
+                  "body/recipient/groupId": "5d2de009-a963-4475-a7dc-50d9057f22c2",
+                  "body/recipient/channelId": "19:09a08d75027c466ab2ebcf7190fa0b4d@thread.tacv2",
+                  "body/messageBody": "<p>\ud83c\udfab <b>**New IT Support Request**</b><br><br>\ud83d\udd16 <b>Ticket ID:</b> @{triggerOutputs()?['body/resourceData/responseId']}<br>\ud83d\udc64 <b>Name:</b> @{outputs('Get_response_details')?['body/r9e4f7f04de39443ca05a0fd2f7acef89']}<br>\ud83c\udfe2 <b>Department & Designation:</b> @{outputs('Get_response_details')?['body/r267f9f6d0b9d471d9d0ae78034285092']}<br>\ud83d\udd22 <b>Row #:</b> @{outputs('Get_response_details')?['body/rccb1a09c8d484110a578f62703b116d1']}<br>\ud83d\udcba <b>Seat #:</b> @{outputs('Get_response_details')?['body/r7420a9807c444d39a67156a6a7bd946e']}<br>\ud83e\udde9 <b>Issue Type:</b> @{outputs('Get_response_details')?['body/r992204c6b4b94b469ad57ac2943cd71c']}<br>\u2699\ufe0f <b>Urgency Type:</b> @{outputs('Get_response_details')?['body/rc5f3de69217748198d0118825bc098d4']}<br><br>\ud83d\udcc5 <b>Submission Date & Time:</b> @{convertTimeZone(utcNow(),'UTC','Pakistan Standard Time','dd-MMM-yyyy hh:mm tt')}</p>"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_teams",
+                  "connection": "shared_teams-1",
+                  "operationId": "PostMessageToConversation"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "c3e92dbd-7e57-4802-8599-2d7876a528b4"
+              }
+            }
+          }
+        },
+        "metadata": {
+          "operationMetadataId": "f48f9bb5-e066-454f-8540-9f5906751bde"
+        }
+      }
+    }
+  }
+}
